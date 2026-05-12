@@ -26,7 +26,7 @@ When you clone the parent `awesome-ai-agents` repository, follow these steps to 
 
 ### 1. Navigate to the Project Directory
 ```bash
-cd build_ai_agent_google_adk
+cd build-ai-agent-google-adk
 ```
 
 ### 2. Setup Environment Variables
