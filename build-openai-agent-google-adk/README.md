@@ -1,92 +1,92 @@
-# Build an OpenAI-Compatible Agent with Google ADK
+# Google ADK で OpenAI 互換エージェントを構築する
 
-This tutorial project shows the same blog-writing agent pattern as the Gemini examples, but routes model calls through ADK's `LiteLlm` connector. It can use OpenAI-hosted models with `OPENAI_API_KEY`, and can also point at OpenAI-compatible endpoints supported by LiteLLM.
+このチュートリアルプロジェクトは、Gemini 版の例と同じブログ執筆エージェントの構成を使いながら、モデル呼び出しを ADK の `LiteLlm` コネクタ経由に切り替えます。`OPENAI_API_KEY` を使って OpenAI ホストのモデルを利用できるほか、LiteLLM が対応する OpenAI 互換エンドポイントにも接続できます。
 
-ADK Python has supported non-Gemini models through LiteLLM since the initial `v0.1.0` release. Gemini is still the most direct path in ADK, while LiteLLM is the portability layer for OpenAI, Anthropic, Cohere, local OpenAI-compatible servers, and other providers.
+ADK Python は初期リリースの `v0.1.0` から、LiteLLM 経由で Gemini 以外のモデルに対応しています。Gemini は ADK で最も直接的に統合された選択肢であり、LiteLLM は OpenAI、Anthropic、Cohere、ローカルの OpenAI 互換サーバーなどを使うための移植性レイヤーです。
 
-## Project Structure
+## プロジェクト構成
 
-- `blogger/agent.py`: ADK Web UI entry point and multi-agent workflow.
-- `blogger/__init__.py`: Python package marker for ADK discovery.
-- `requirements.txt`: Legacy dependency list for readers not using PEP 723.
+- `blogger/agent.py`: ADK Web UI のエントリポイントとマルチエージェントワークフロー。
+- `blogger/__init__.py`: ADK がパッケージを検出するための Python パッケージマーカー。
+- `requirements.txt`: PEP 723 を使わない読者向けの従来型依存関係リスト。
 
-## Setup
+## セットアップ
 
-Navigate to this project directory:
+このプロジェクトディレクトリへ移動します。
 
 ```bash
 cd build-openai-agent-google-adk
 ```
 
-Create a local `.env` file:
+ローカルに `.env` ファイルを作成します。
 
 ```text
 MODEL=openai/gpt-5.5
 OPENAI_API_KEY=your_actual_api_key
 ```
 
-The `MODEL` value uses LiteLLM's provider/model format. For another OpenAI-compatible endpoint, keep the `openai/` provider prefix and configure the endpoint through the environment variables expected by LiteLLM, such as `OPENAI_API_BASE`.
+`MODEL` の値は LiteLLM の provider/model 形式を使います。別の OpenAI 互換エンドポイントを使う場合は、`openai/` の provider 接頭辞を維持し、`OPENAI_API_BASE` など LiteLLM が期待する環境変数でエンドポイントを設定します。
 
-## Choosing Gemini or Another LLM
+## Gemini と他の LLM の使い分け
 
-Use Gemini directly in ADK when you want the most integrated Google path. This is usually the right default for tutorials that rely on Google AI Studio or Vertex AI credentials, Gemini-specific capabilities, Google-hosted tooling, or the simplest ADK setup. A Gemini model can normally be passed as a plain model string, such as `gemini-2.5-flash`, without constructing a connector object.
+Google との統合を最も重視する場合は、Gemini を ADK から直接使います。Google AI Studio や Vertex AI の認証情報、Gemini 固有の機能、Google ホストのツール、または最もシンプルな ADK セットアップに依存するチュートリアルでは、通常 Gemini が第一候補です。Gemini モデルは `gemini-2.5-flash` のようなプレーンなモデル文字列として渡せるため、コネクタオブジェクトを作る必要がない場合が多いです。
 
-Use `LiteLlm` when model portability matters more than native Google integration. This project does that by passing `LiteLlm(model=MODEL)` into each `LlmAgent`. The `MODEL` setting must use LiteLLM's provider prefix format, for example:
+モデルの移植性を重視する場合は `LiteLlm` を使います。このプロジェクトでは、各 `LlmAgent` に `LiteLlm(model=MODEL)` を渡しています。`MODEL` は LiteLLM の provider 接頭辞付き形式にする必要があります。
 
 ```text
 MODEL=openai/<model-name>
 ```
 
-For OpenAI-compatible gateways or self-hosted servers, keep the provider prefix expected by LiteLLM and configure the endpoint with provider-specific environment variables, such as `OPENAI_API_BASE`. For non-OpenAI providers, set the matching key, such as `ANTHROPIC_API_KEY`, and use that provider's LiteLLM model string.
+OpenAI 互換ゲートウェイやセルフホストサーバーを使う場合は、LiteLLM が期待する provider 接頭辞を使い、`OPENAI_API_BASE` など provider 固有の環境変数で接続先を設定します。OpenAI 以外の provider を使う場合は、`ANTHROPIC_API_KEY` のような対応する API キーを設定し、その provider の LiteLLM モデル文字列を指定します。
 
-## Model Compatibility Notes
+## モデル互換性の注意点
 
-ADK gives each `LlmAgent` the same orchestration surface, but the model backend can behave differently. Test the full workflow whenever you change providers.
+ADK は各 `LlmAgent` に同じオーケストレーションのインターフェースを提供しますが、実際のモデルバックエンドの挙動は provider によって異なります。provider を変更したら、必ずワークフロー全体をテストしてください。
 
-- **Tool calling:** The planner and writer are exposed as agent tools. Some models follow function/tool calls reliably, while others may need simpler instructions or fewer tool choices.
-- **Structured output:** Validation loops expect exact strings such as `ok` or `retry`. Models with loose instruction following can cause unnecessary retries, so keep validator prompts strict and outputs short.
-- **Streaming and multimodal features:** Gemini, OpenAI-compatible APIs, and local model servers do not expose identical streaming, audio, image, or file behavior through LiteLLM. Avoid assuming a feature works until it is tested with the selected model.
-- **Context windows:** Larger context models can keep more outline and draft state, but higher limits often cost more and may increase latency. Smaller models may need shorter prompts and lower retry counts.
-- **Latency and rate limits:** LiteLLM adds a provider abstraction, but the actual limit comes from the target API or gateway. If the ADK Web UI stalls or retries fail, check provider rate-limit errors first.
-- **Cost tracking:** Provider billing differs. A multi-agent workflow can call the model several times for one user prompt because planning, validation, writing, and final response generation are separate steps.
-- **Model names:** LiteLLM model identifiers change as providers add, rename, or retire models. If a model stops resolving, update `MODEL` rather than changing ADK agent code.
-- **Secrets:** Keep API keys in the local `.env` file and never commit it. Use only the credentials needed for the selected provider.
+- **ツール呼び出し:** このプロジェクトでは planner と writer を agent tool として公開しています。関数呼び出しやツール呼び出しに強いモデルもあれば、より単純な指示や少ないツール候補が必要なモデルもあります。
+- **構造化出力:** 検証ループは `ok` や `retry` のような厳密な文字列を期待します。指示追従が緩いモデルでは不要なリトライが起きるため、validator のプロンプトは短く厳密に保ちます。
+- **ストリーミングとマルチモーダル:** Gemini、OpenAI 互換 API、ローカルモデルサーバーでは、LiteLLM 経由で利用できるストリーミング、音声、画像、ファイル処理の挙動が同一ではありません。選択したモデルで検証するまで、機能が使える前提にしないでください。
+- **コンテキスト長:** 大きなコンテキストを持つモデルは outline や draft の状態を多く保持できますが、コストやレイテンシが増えることがあります。小さいモデルではプロンプトを短くし、リトライ回数も控えめにします。
+- **レイテンシとレート制限:** LiteLLM は provider 抽象化を提供しますが、実際の制限は接続先 API やゲートウェイに依存します。ADK Web UI が停止したように見える場合やリトライが失敗する場合は、まず provider の rate limit エラーを確認します。
+- **コスト管理:** 課金体系は provider ごとに異なります。マルチエージェントワークフローでは、planning、validation、writing、最終応答生成が別々の呼び出しになるため、1 回のユーザープロンプトで複数回モデルが呼ばれます。
+- **モデル名:** LiteLLM のモデル識別子は provider の追加、名称変更、廃止に合わせて変わることがあります。モデルが解決できなくなった場合は、ADK の agent code ではなく `MODEL` を更新します。
+- **シークレット:** API キーはローカルの `.env` に置き、コミットしないでください。選択した provider に必要な認証情報だけを設定します。
 
-## Practical Selection Guide
+## 実践的な選択ガイド
 
-Start with Gemini when the tutorial goal is learning ADK itself, using Google Cloud services, or matching Google's documentation examples. Start with LiteLLM when the goal is comparing model quality, using an existing OpenAI-compatible gateway, running through a corporate proxy, or swapping providers without changing the agent graph.
+ADK 自体を学ぶ、Google Cloud サービスを使う、または Google のドキュメント例に合わせることが目的なら Gemini から始めます。モデル品質を比較したい、既存の OpenAI 互換ゲートウェイを使いたい、社内プロキシ経由で接続したい、または agent graph を変えずに provider を差し替えたい場合は LiteLLM から始めます。
 
-For production-style examples, pin dependency versions, document the tested model string, and run a smoke test after every provider change:
+本番に近い例では、依存関係のバージョンを固定し、テスト済みのモデル文字列を README に記録し、provider を変更するたびに smoke test を実行します。
 
 ```text
-Write a technical blog post about evaluating AI coding agents.
+AI コーディングエージェントを評価する方法について、技術ブログを書いてください。
 ```
 
-Confirm that the planner runs, the writer runs, validation completes, and the final response includes the requested alternate titles and hooks.
+planner が実行され、writer が実行され、validation が完了し、最終応答に代替タイトルと短い SNS 投稿文が含まれることを確認します。
 
-## Running the Agent
+## エージェントの実行
 
-Start the ADK Web UI:
+ADK Web UI を起動します。
 
 ```bash
 uv run --script blogger/agent.py
 ```
 
-Open the local URL shown in the terminal, usually `http://127.0.0.1:8000`, and try:
+ターミナルに表示されるローカル URL を開きます。通常は `http://127.0.0.1:8000` です。次のようなプロンプトを試してください。
 
 ```text
-Write a technical blog post about evaluating AI coding agents.
+AI コーディングエージェントを評価する方法について、技術ブログを書いてください。
 ```
 
-## How It Works
+## 仕組み
 
-- `LiteLlm(model=MODEL)` adapts the configured OpenAI-compatible model for ADK.
-- `BlogPlanner` creates an outline and a validation loop retries weak outlines.
-- `BlogWriter` writes the final article and a validation loop checks the draft.
-- The root agent exposes planner and writer agents as tools so the workflow stays explicit.
+- `LiteLlm(model=MODEL)` が、設定された OpenAI 互換モデルを ADK で使える形に変換します。
+- `BlogPlanner` が outline を作成し、検証ループが弱い outline をリトライします。
+- `BlogWriter` が最終記事を書き、検証ループが draft を確認します。
+- root agent は planner と writer を tool として公開し、ワークフローを明示的に保ちます。
 
-## Troubleshooting
+## トラブルシューティング
 
-- If authentication fails, confirm `.env` is in this directory and contains `OPENAI_API_KEY`.
-- If the model is unavailable, set `MODEL` to another LiteLLM OpenAI model string your account supports.
-- If dependency installation fails, rerun with a working network connection because `uv run --script` resolves PEP 723 dependencies automatically.
+- 認証に失敗する場合は、このディレクトリに `.env` があり、`OPENAI_API_KEY` が設定されていることを確認してください。
+- モデルが利用できない場合は、アカウントで利用可能な別の LiteLLM OpenAI モデル文字列を `MODEL` に設定してください。
+- 依存関係のインストールに失敗する場合は、ネットワーク接続を確認してから再実行してください。`uv run --script` は PEP 723 の依存関係を自動解決します。
