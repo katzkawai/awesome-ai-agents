@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#   "google-adk",
+#   "mcp",
+#   "pandas",
+#   "pytrends",
+# ]
+# ///
+
 """
 Minimal MCP server exposing a single tool: `trends`
 

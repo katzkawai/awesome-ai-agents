@@ -17,12 +17,7 @@ This repository contains the code for the second video in the series "Build an A
 cd build-mcp-agent-google-adk
 ```
 
-### 2. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Setup Environment Variables
+### 2. Setup Environment Variables
 Update your `.env` file with your Gemini API key:
 ```text
 MODEL=gemini-flash-latest
@@ -33,12 +28,12 @@ GOOGLE_API_KEY=your_api_key
 
 Run the following command to start the ADK Web UI:
 ```bash
-adk web .
+uv run --script blogger/agent.py
 ```
 
 Open your browser and navigate to `http://127.0.0.1:8000` to interact with the agent!
 
-*Note: The MCP server starts automatically when the agent needs it. You do not need to run it separately.*
+*Note: Dependencies are declared in `blogger/agent.py` using PEP 723 inline script metadata. The MCP server starts automatically in the same uv-managed Python environment when the agent needs it.*
 
 ## Key Learnings & Troubleshooting
 

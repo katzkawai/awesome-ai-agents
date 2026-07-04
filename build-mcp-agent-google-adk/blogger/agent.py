@@ -1,4 +1,16 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#   "google-adk",
+#   "mcp",
+#   "pandas",
+#   "pytrends",
+#   "python-dotenv",
+# ]
+# ///
+
 import os
+import subprocess
 import sys
 from pathlib import Path
 import datetime
@@ -9,8 +21,10 @@ from google.adk.tools import agent_tool
 from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, StdioConnectionParams
 from mcp import StdioServerParameters
 
+PROJECT_DIR = Path(__file__).resolve().parents[1]
+
 # ── env/config ───────────────────────────────────────────────────────────────
-load_dotenv()
+load_dotenv(PROJECT_DIR / ".env")
 
 MODEL = os.getenv("MODEL", "gemini-flash-latest")
 
@@ -97,7 +111,7 @@ writer_tool  = agent_tool.AgentTool(agent=robust_blog_writer)
 # ── MCP Toolset: Google Trends ──────────────────────────────────────────────
 # We point this to our local server.py
 trends_mcp_server = StdioServerParameters(
-   command="python3",
+   command=sys.executable,
    args=[str(Path(__file__).parent / "server.py")],
 )
 
@@ -131,3 +145,14 @@ Date: {datetime.datetime.now().strftime("%Y-%m-%d")}
        writer_tool,  # calls RobustBlogWriter
    ],
 )
+
+def main() -> int:
+   """Launch this tutorial project with the ADK Web UI."""
+   command = ["adk", "web", *sys.argv[1:], str(PROJECT_DIR)]
+   try:
+       return subprocess.call(command)
+   except KeyboardInterrupt:
+       return 130
+
+if __name__ == "__main__":
+   raise SystemExit(main())

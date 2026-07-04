@@ -36,19 +36,11 @@ MODEL=gemini-flash-latest
 GOOGLE_API_KEY=your_actual_api_key
 ```
 
-### 3. Install Dependencies
-We recommend using a virtual environment.
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+### 3. Run the Agent with uv
 
-### 4. Run the Agent
-Start the ADK web interface:
+Dependencies are declared in `blogger/agent.py` using PEP 723 inline script metadata. Start the ADK web interface with:
 ```bash
-adk web
+uv run --script blogger/agent.py
 ```
-*(Note: If `adk` command is not found, you may need to use the full path or ensure it is in your PATH after installation.)*
 
 Open your browser and navigate to the local link provided (usually `http://127.0.0.1:8000` or similar).
